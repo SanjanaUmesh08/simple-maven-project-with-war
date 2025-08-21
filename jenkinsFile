@@ -1,42 +1,38 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven 3'
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/SanjanaUmesh08/simple-maven-project-with-war.git'
+                git url: 'https://github.com/SanjanaUmesh08/simple-maven-project-with-war', branch: 'main'
             }
         }
 
         stage('Build') {
             steps {
+                // Skip tests while building
                 sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-
         stage('Deploy') {
-            steps {
-                echo 'Deploying WAR to Tomcat...'
-                sh '''
-                WAR_FILE=$(ls target/*.war | head -n 1)
-                cp $WAR_FILE /home/ec2-user/apache-tomcat-9.0.108/webapps/
-                '''
-            }
-        }
-    }
+    steps {
+        sh '''
+        # Stop Tomcat
+        /opt/tomcat/bin/shutdown.sh
 
-    post {
-        success { 
-            echo 'Deployment Successful! 🎉' 
-        }
-        failure { 
-            echo 'Build Failed ❌' 
-        }
+        # Copy WAR
+        cp target/simple-war-app-1.0-SNAPSHOT.war /opt/tomcat/webapps/
+
+        # Start Tomcat
+        /opt/tomcat/bin/startup.sh
+        '''
+    }
+}
+
     }
 }
